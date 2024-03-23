@@ -1,6 +1,6 @@
 require("dotenv").config();
-const {STRIPE_SECRET_KEY_TEST}=process.env;
-const stripe = require('stripe')(STRIPE_SECRET_KEY_TEST);
+const {STRIPE_SECRET_KEY}=process.env
+const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const httpStatusCode = require("../constant/httpStatusCode");
 
 

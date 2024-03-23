@@ -76,6 +76,8 @@ const ViewProduct = async (req, res) => {
   }
 };
 
+
+
 const DeleteProduct = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -126,4 +128,55 @@ const ViewProductWithId=async (req,res)=>{
   }
 }
 
-module.exports = { AddProduct, ViewProduct,ViewProductWithId };
+const ViewProductCategory = async (req, res) => {
+  try {
+    const { categoryName } = req.body;
+
+    if (!categoryName) {
+      return res.status(httpStatusCode.BAD_REQUEST).json({
+        success: false,
+        message: "Category name is required",
+      });
+    }
+
+    // Find the category by name
+    const category = await CategoryModel.findOne({ name: categoryName });
+
+    if (!category) {
+      return res.status(httpStatusCode.NOT_FOUND).json({
+        success: false,
+        message: "Category not found",
+      });
+    }
+
+    // Find products with matching category ObjectId
+    const products = await ProductModel.find({ category: category._id }).populate(
+      "category",
+      "name"
+    );
+
+    if (!products || products.length === 0) {
+      return res.status(httpStatusCode.NOT_FOUND).json({
+        success: false,
+        message: "No products found for the specified category",
+      });
+    }
+
+    return res.status(httpStatusCode.OK).json({
+      success: true,
+      message: "Products found for the specified category",
+      data: products.map((product) => ({
+        ...product.toJSON(),
+        category: product.category ? product.category.name : null,
+      })),
+    });
+  } catch (error) {
+    return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = { AddProduct, ViewProduct,ViewProductWithId,ViewProductCategory };

@@ -1,38 +1,35 @@
-const jwt= require('jsonwebtoken');
+const jwt = require('jsonwebtoken');
+require("dotenv").config();
+// const secretKey = 'Rahman@1234';
 const httpStatusCode = require('../constant/httpStatusCode');
-require('dotenv').config();
-const {JWT_SECRET}=process.env;
 
-const GetToken=async (user)=>{
-    const token= await jwt.sign({user},JWT_SECRET,{expiresIn:'1d'});
+async function getToken(user) {
+    const token = await jwt.sign({ user }, process.env.JWT_SECRET, { expiresIn: '1d' });
     return token;
 }
 
-const VerifyToken=(req,res,next)=>{
-    const token= req.headers.authorization;
-    if(!token){
-        return res.status(httpStatusCode.UNAUTHORIZED).json({
-            success:false,
-            message:"Unauthorized: Token not provided"
-        })
+async function verifyToken(req, res, next) {
+    const token = req.headers.authorization;
+
+    if (!token) {
+        return res.status(httpStatusCode.UNAUTHORIZED).json({ success: false, message: 'Unauthorized: Token not provided' });
     }
 
-    try{
-
-        const decoded= jwt.verify(token,JWT_SECRET);
-        req.user=decoded.user;
-        console.log(req.user);
+    try {
+        // Split the authorization header by space and directly use the token
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded.user;
+        console.log(req.user)
+        // console.log("token:", token);
+        // console.log("secreate key:",process.env.JWT_SECRET)
         next();
-    }catch(error){
-        return res.status(httpStatusCode.UNAUTHORIZED).json({
-            success: false,
-            message:"Unauthorized: Invalid token"
-        })
+    } catch (error) {
+        console.error('Error verifying token:', error);
+        return res.status(httpStatusCode.UNAUTHORIZED).json({ success: false, message: 'Unauthorized: Invalid token' });
     }
 }
 
-
-module.exports={
-    GetToken,
-    VerifyToken
+module.exports = {
+    getToken,
+    verifyToken
 }

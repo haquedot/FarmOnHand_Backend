@@ -4,6 +4,7 @@ const dotenv = require("dotenv");
 const cors = require("cors");
 const bodyParser=require('body-parser');
 const cookieParser=require('cookie-parser');
+const path=require('path')
 dotenv.config();
 
 const mainRoutes=require('./routes/mainRoutes');
@@ -30,8 +31,10 @@ app.use(
   })
 );
 
-//routes
-app.use('/',mainRoutes);
+// Serve static files (images) from the 'uploads' folder
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Routes
+app.use("/", mainRoutes);
 
 
 const port = PORT || 5000;
