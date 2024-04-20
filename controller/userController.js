@@ -4,7 +4,9 @@ const httpStatusCode = require("../constant/httpStatusCode");
 const UserModel = require("../models/userModel");
 const { getToken } = require("../middleware/authMiddleware");
 const AdminModel = require("../models/adminModel");
-const {CreateEmptyCart}= require('../controller/cartController');
+const FarmerModel = require("../models/farmerModel");
+const { CreateEmptyCart } = require("../controller/cartController");
+const {SendEmail}=require('../services/emailServices');
 const registerUser = async (req, res) => {
   try {
     // Validate incoming request data
@@ -16,11 +18,13 @@ const registerUser = async (req, res) => {
       });
     }
 
-    const { firstname,lastname,username, email, password, phone } = req.body;
+    const { firstname, lastname, username, email, password, phone, role } =
+      req.body;
 
     // Check if user with provided email or phone already exists
     const existingUser = await UserModel.findOne({ email });
-    if (existingUser) {
+    const existingFarmer = await FarmerModel.findOne({ email });
+    if (existingUser || existingFarmer) {
       return res.status(httpStatusCode.CONFLICT).json({
         success: false,
         message:
@@ -30,27 +34,46 @@ const registerUser = async (req, res) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    
+
     //create a empty cart
-    const cart=await CreateEmptyCart();
+    const cart = await CreateEmptyCart();
 
-    // Create new user
-    const user = await UserModel.create({
-      firstname,
-      lastname,
-      username,
-      email,
-      password: hashedPassword,
-      phone,
-      role: "user",
-      cart:cart
-    });
+    let newUser;
+    if (role === "user") {
+      // Create new user
+      newUser = await UserModel.create({
+        firstname,
+        lastname,
+        username,
+        email,
+        password: hashedPassword,
+        phone,
+        role: "user",
+        cart: cart,
+      });
+    }else if(role==='farmer'){
+      newUser=await FarmerModel.create({
+        firstname,
+        lastname,
+        username,
+        email,
+        password: hashedPassword,
+        phone,
+        role: "farmer",
+      });
+    }else {
+      return res.status(httpStatusCode.BAD_REQUEST).json({
+        success: false,
+        message: "Invalid role specified",
+      });
+    }
 
-    
+    // Send a congratulatory email to the user
+    SendEmail(email,newUser.username);
     return res.status(httpStatusCode.CREATED).json({
       success: true,
       message: "User registered successfully!",
-      data: user,
+      data: newUser,
     });
   } catch (error) {
     console.error("Error registering user:", error);
@@ -78,6 +101,9 @@ const loginUser = async (req, res) => {
 
     if (!user) {
       user = await AdminModel.findOne({ email });
+      if(!user){
+        user=await FarmerModel.findOne({email});
+      }
     }
 
     if (!user) {
@@ -113,34 +139,32 @@ const loginUser = async (req, res) => {
   }
 };
 
-
-const ViewUsers= async(req,res)=>{
-  try{
-    const Users= await UserModel.find();
-    if(!Users){
+const ViewUsers = async (req, res) => {
+  try {
+    const Users = await UserModel.find();
+    if (!Users) {
       return res.status(httpStatusCode.BAD_REQUEST).json({
-        success:false,
-        message:"users are not found"
-      })
+        success: false,
+        message: "users are not found",
+      });
     }
 
     return res.status(httpStatusCode.OK).json({
       success: true,
-      message:"viewd successfully",
-      data: Users
-    })
-
-  }catch(error){
+      message: "viewd successfully",
+      data: Users,
+    });
+  } catch (error) {
     return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
       success: false,
-      message:"something went wrong !!",
-      error: error.message
-    })
+      message: "something went wrong !!",
+      error: error.message,
+    });
   }
-}
+};
 
 module.exports = {
   registerUser,
   loginUser,
-  ViewUsers
+  ViewUsers,
 };

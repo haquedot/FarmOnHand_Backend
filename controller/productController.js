@@ -18,12 +18,12 @@ const AddProduct = async (req, res) => {
     const { productName, description, price, productImage, category, stock } =
       req.body;
     const name = productName;
-    const productImageName=req.file.filename;
+    const productImageName = req.file.filename;
     const product = await ProductModel.create({
       name,
       description,
       price,
-      productImage :productImageName,
+      productImage: productImageName,
       category,
       stock,
     });
@@ -76,8 +76,6 @@ const ViewProduct = async (req, res) => {
   }
 };
 
-
-
 const DeleteProduct = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -97,36 +95,36 @@ const DeleteProduct = async (req, res) => {
   }
 };
 
-const ViewProductWithId=async (req,res)=>{
-  try{
-    const {productId}=req.body;
-    if(!productId){
+const ViewProductWithId = async (req, res) => {
+  try {
+    const { productId } = req.body;
+    if (!productId) {
       return res.status(httpStatusCode.BAD_REQUEST).json({
         success: false,
-        message:"Invalid ProductId or empty productId",
-      })
+        message: "Invalid ProductId or empty productId",
+      });
     }
-    const product=await ProductModel.findById(productId);
-    if(!product){
+    const product = await ProductModel.findById(productId).populate('category');
+    if (!product) {
       return res.status(httpStatusCode.NOT_FOUND).json({
-        success:false,
-        message:"Product Not found",
-      })
+        success: false,
+        message: "Product Not found",
+      });
     }
 
     return res.status(httpStatusCode.OK).json({
-      success:true,
-      message:"Successfully viewed products!!",
-      data:product
-    })
-  }catch(error){
+      success: true,
+      message: "Successfully viewed products!!",
+      data: product,
+    });
+  } catch (error) {
     return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
-      success:false,
-      message:"Something went wrong!!",
-      error:error.message
-    })
+      success: false,
+      message: "Something went wrong!!",
+      error: error.message,
+    });
   }
-}
+};
 
 const ViewProductCategory = async (req, res) => {
   try {
@@ -150,10 +148,9 @@ const ViewProductCategory = async (req, res) => {
     }
 
     // Find products with matching category ObjectId
-    const products = await ProductModel.find({ category: category._id }).populate(
-      "category",
-      "name"
-    );
+    const products = await ProductModel.find({
+      category: category._id,
+    }).populate("category", "name");
 
     if (!products || products.length === 0) {
       return res.status(httpStatusCode.NOT_FOUND).json({
@@ -179,4 +176,65 @@ const ViewProductCategory = async (req, res) => {
   }
 };
 
-module.exports = { AddProduct, ViewProduct,ViewProductWithId,ViewProductCategory };
+const ViewProductFruits = async (req, res) => {
+  try {
+    const Products = await ProductModel.find({})
+      .populate({
+        path: "category",
+        match: { name: "fruits" },
+      })
+      .exec();
+
+    const filteredProducts = Products.filter(
+      (product) => product.category != null
+    );
+
+    return res.status(httpStatusCode.OK).json({
+      success: true,
+      message: "filtered the products!!",
+      data: filteredProducts,
+    });
+  } catch (error) {
+    return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "something went wrong!!",
+      error: error.message,
+    });
+  }
+};
+
+const ViewProductsVegetables = async (req, res) => {
+  try {
+    const Products = await ProductModel.find({})
+      .populate({
+        path: "category",
+        match: { name: "vegitables" },
+      })
+      .exec();
+
+    const filteredProducts = Products.filter(
+      (product) => product.category != null
+    );
+
+    return res.status(httpStatusCode.OK).json({
+      success: true,
+      message: "filtered the products!!",
+      data: filteredProducts,
+    });
+  } catch (error) {
+    return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: "something went wrong!!",
+      error: error.message,
+    });
+  }
+};
+
+module.exports = {
+  AddProduct,
+  ViewProduct,
+  ViewProductWithId,
+  ViewProductCategory,
+  ViewProductFruits,
+  ViewProductsVegetables 
+};
