@@ -2,7 +2,7 @@ require("dotenv").config();
 const {STRIPE_SECRET_KEY}=process.env
 const stripe = require('stripe')(STRIPE_SECRET_KEY);
 const httpStatusCode = require("../constant/httpStatusCode");
-
+const {SendEmail}=require('../services/emailServices');
 
 
 
@@ -25,10 +25,11 @@ const Payment = async (req, res) => {
       payment_method_types:['card'],
       line_items: lineItems,
       mode: "payment",
-      success_url: "http://localhost:5173/Invella-e-commerce/#/order-received",
-      cancel_url: "http://localhost:5173/cancel",
+      success_url: "http://localhost:5173/Invella-e-commerce/#/order-details",
+      cancel_url: "http://localhost:5173/Invella-e-commerce/#/checkout",
     });
 
+  // SendEmail()
     return res.status(httpStatusCode.OK).json({ id: session.id });
    
   } catch (error) {
